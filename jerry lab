@@ -1,0 +1,57 @@
+# 🧪 Jerry Lab
+
+Jerry Lab is a simple security lab created for practicing basic Windows enumeration, privilege escalation, and CTF-style skills. It is designed as a beginner-friendly environment for learning common techniques used in ethical hacking and penetration testing.
+
+---
+
+## 🚀 Features
+
+- Windows-based target environment
+- Local user enumeration
+- File inspection and analysis
+- Privilege escalation challenges
+- Realistic lab structure (CTF-style)
+
+---
+
+## 📁 Lab Structure
+
+C:
+├── Users
+│ └── Administrator
+│ └── Desktop
+│ └── flags
+│ └── 2 for the price of 1.txt
+
+
+---
+
+## 🎯 Objectives
+
+- Find all the flag files hidden across the system
+- Enumerate local users, groups, and permissions
+- Perform privilege escalation to gain higher-level access
+
+---
+
+## 🛠️ Tools Recommended
+
+- `whoami`, `net user`, `net localgroup`
+- `icacls`, `dir /s /b`
+- PowerShell & CMD
+- Enumeration scripts (like WinPEAS, Seatbelt, etc.)
+
+---
+
+## 📌 Usage Instructions
+
+1. Boot up the Jerry Lab VM or machine.
+2. Start enumeration from a low-privilege user.
+3. Explore file systems and user folders.
+4. Capture flags and escalate privileges.
+
+---
+
+## 🏁 Sample Flag
+
+

